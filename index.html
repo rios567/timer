@@ -12,7 +12,7 @@
     .app{max-width:600px;margin:auto;padding:16px;}
     h1{text-align:center;margin-bottom:8px;font-size:1.2rem;}
     .header-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:1.05rem;color:var(--secondary);}
-    .header-today{color:var(--primary);text-align:center;flex:1;}
+    .header-today{color:var(--primary);text-align:left;flex:1;}
     .header-total{text-align:right;flex:1;}
     .theme-toggle{position:fixed;top:16px;right:16px;background:var(--card);border:none;padding:8px;border-radius:50%;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.1);}
     .tabs{display:flex;border-bottom:1px solid #ccc;margin-bottom:12px;}
@@ -27,7 +27,7 @@
     .proj-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
     .title{font-size:1.1rem;font-weight:600;flex:1;}
     .proj-times{display:flex;width:100%;justify-content:space-between;font-size:1rem;margin-top:2px;}
-    .today-time{color:var(--primary);text-align:center;flex:1;}
+    .today-time{color:var(--primary);text-align:left;flex:1;}
     .total-time{color:var(--secondary);text-align:right;flex:1;}
     .proj-controls{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
     .proj-controls button{flex:1;padding:6px;border:none;background:var(--secondary);color:#fff;border-radius:4px;font-size:0.9rem;cursor:pointer;}
@@ -38,11 +38,11 @@
     .record-list.open{max-height:200px;} 
     .record{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee;}
     .record span{font-size:0.9rem;}
-    .record button{border:none;background:transparent;color:#ff3b30;font-size:1rem;cursor:pointer;}
+    .recordbutton{border:none;background:transparent;color:#ff3b30;font-size:1rem;cursor:pointer;}
     .search-input{width:100%;padding:8px;margin-bottom:12px;border:1px solid #ccc;border-radius:4px;}
   </style>
 </head>
-<body data-theme="light">
+<body>
   <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
   <div class="app">
     <h1>学习计时器</h1>
@@ -67,18 +67,27 @@
     </div>
   </div>
 <script>
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) document.body.setAttribute('data-theme', savedTheme);
+  const root=document.body;
   let projects = JSON.parse(localStorage.getItem('projects')||'[]');
   let openRecords = new Set();
-  const root=document.body;
   let saveTimer;
   function save(){
     clearTimeout(saveTimer);
     saveTimer=setTimeout(()=>{
       localStorage.setItem('projects',JSON.stringify(projects));
     },200);
-    render();
-  }function formatMin(m){ const h=Math.floor(m/60),mm=m%60; return h+'h'+mm+'m'; }
-  function getTodayStartTs(){ const d=new Date(); d.setHours(5,0,0,0); return d.getTime(); }
+    render(); 
+  }
+  function formatMin(m){ const h=Math.floor(m/60),mm=m%60; return h+'h'+mm+'m'; }
+  function getTodayStartTs(){
+    const now=new Date();
+    const d=new Date(now);
+    if(now.getHours()<5){ d.setDate(now.getDate()-1); }
+    d.setHours(5,0,0,0);
+    return d.getTime();
+  }
   function switchTab(tab){
     document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
     document.querySelectorAll('.list').forEach(l=>l.classList.toggle('active',l.id===tab));
@@ -95,7 +104,7 @@
     if(v>0){
       projects[i].total+=v;
       const ts=Date.now();
-      projects[i].records.unshift({d:v,ts});
+     projects[i].records.unshift({d:v,ts});
       document.getElementById('time-'+i).value='';
       save();
     }
@@ -120,7 +129,12 @@
       p.style.display=name.includes(kw)?'':'none';
     });
   }
-  function toggleTheme(){ const m=root.getAttribute('data-theme'); root.setAttribute('data-theme',m==='light'?'dark':'light'); }
+  function toggleTheme(){
+    const m=root.getAttribute('data-theme');
+    const newTheme = m==='light'?'dark':'light';
+    root.setAttribute('data-theme',newTheme);
+    localStorage.setItem('theme',newTheme);
+  }
   function moveUp(i){ if(i>0){ [projects[i-1],projects[i]]=[projects[i],projects[i-1]]; save(); } }
   function moveDown(i){ if(i<projects.length-1){ [projects[i+1],projects[i]]=[projects[i],projects[i+1]]; save(); } }
   function render(){
@@ -133,9 +147,7 @@
       let t0=0; p.records.forEach(r=>{ if(r.ts>=todayStart) t0+=r.d; }); today+=t0;
       const div=document.createElement('div'); div.className='project';
       div.innerHTML=`
-        <div class="proj-header">
-          <div class="title">${p.name}</div>
-        </div>
+        <div class="proj-header"><div class="title">${p.name}</div></div>
         <div class="proj-times">
           <div class="today-time">今日：${formatMin(t0)}</div>
           <div class="total-time">总：${formatMin(p.total)}</div>
@@ -164,3 +176,4 @@
 </script>
 </body>
 </html>
+
