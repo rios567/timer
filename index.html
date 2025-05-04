@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>学习计时器</title>
+  <style>
+    :root { --bg:#f0f4f8; --card:#fff; --text:#333; --primary:#007aff; --secondary:#555; }
+    [data-theme="dark"] { --bg:#1c1c1e; --card:#2c2c2e; --text:#e5e5ea; --primary:#0a84ff; --secondary:#8e8e93; }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);}
+    .app{max-width:600px;margin:auto;padding:16px;}
+    h1{text-align:center;margin-bottom:8px;font-size:1.2rem;}
+    .header-total{text-align:center;margin-bottom:12px;font-size:0.9rem;}
+    .theme-toggle{position:fixed;top:16px;right:16px;background:var(--card);border:none;padding:8px;border-radius:50%;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.1);}
+    .tabs{display:flex;border-bottom:1px solid #ccc;margin-bottom:12px;}
+    .tab{flex:1;text-align:center;padding:8px 0;cursor:pointer;background:var(--card);}
+    .tab.active{background:var(--bg);border-bottom:2px solid var(--primary);font-weight:bold;color:var(--primary);}
+    .project-input{display:flex;margin-bottom:16px;}
+    .project-input input{flex:1;padding:8px;border:1px solid #ccc;border-radius:4px;background:var(--card);color:var(--text);}
+    .project-input button{margin-left:8px;padding:8px 16px;border:none;background:var(--primary);color:#fff;border-radius:4px;cursor:pointer;}
+    .list{display:none;}
+    .list.active{display:block;}
+    .project{background:var(--card);border-radius:6px;margin-bottom:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+    .proj-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .title{font-size:1rem;font-weight:600;}
+    .time{font-size:0.9rem;color:var(--primary);font-weight:bold;font-family:monospace;}
+    .proj-controls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+    .proj-controls button{flex:1;padding:6px;border:none;background:var(--secondary);color:#fff;border-radius:4px;font-size:0.8rem;cursor:pointer;}
+    .proj-actions{display:flex;}
+    .proj-actions input{flex:1;padding:6px;border:1px solid #ccc;border-radius:4px;}
+    .proj-actions button{margin-left:6px;padding:6px 12px;border:none;background:var(--primary);color:#fff;border-radius:4px;cursor:pointer;}
+    .record-list{margin-top:8px;max-height:0;overflow:hidden;transition:max-height .3s ease;}
+    .record-list.open{max-height:200px;}
+    .record{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee;}
+    .record span{font-size:0.8rem;}
+    .record button{border:none;background:transparent;color:#ff3b30;font-size:1rem;cursor:pointer;}
+    .search-input{width:100%;padding:8px;margin-bottom:12px;border:1px solid #ccc;border-radius:4px;}
+  </style>
+</head>
+<body data-theme="light">
+  <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+  <div class="app">
+    <h1>学习计时器</h1>
+    <div class="header-total">总时间：<span id="header-total">0h0m</span></div>
+    <div class="tabs">
+      <div class="tab active" data-tab="active" onclick="switchTab('active')">项目</div>
+      <div class="tab" data-tab="archived" onclick="switchTab('archived')">归档</div>
+    </div>
+    <div id="active" class="list active">
+      <div class="project-input">
+        <input id="proj-name" placeholder="新项目名称"/>
+        <button onclick="addProject()">添加</button>
+      </div>
+      <div id="proj-list"></div>
+    </div>
+    <div id="archived" class="list">
+      <input id="search-archived" class="search-input" placeholder="搜索归档项目" oninput="filterArchived()"/>
+      <div id="archived-list"></div>
+    </div>
+  </div>
+<script>
+  let projects = JSON.parse(localStorage.getItem('projects')||'[]');
+  let openRecords = new Set();
+  const root = document.body;
+
+  function save(){ localStorage.setItem('projects', JSON.stringify(projects)); render(); }
+  function formatMin(m){ const h=Math.floor(m/60), mm=m%60; return h+'h'+mm+'m'; }
+  function switchTab(tab){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+    document.querySelectorAll('.list').forEach(l=>l.classList.toggle('active', l.id===tab));
+    openRecords.clear();
+  }
+  function addProject(){
+    const n=document.getElementById('proj-name').value.trim(); if(n){ projects.push({name:n,total:0,records:[],archived:false}); document.getElementById('proj-name').value=''; save(); }
+  }
+  function deleteProject(i){ if(confirm('删除项目「'+projects[i].name+'」？')){ projects.splice(i,1); openRecords.delete(i); save(); } }
+  function renameProject(i){ const newName=prompt('编辑项目', projects[i].name); if(newName){ projects[i].name=newName.trim(); save(); } }
+  function addTime(i){ const val=+document.getElementById('time-'+i).value; if(val>0){ projects[i].total+=val; projects[i].records.unshift({t:new Date().toLocaleString(),d:val}); document.getElementById('time-'+i).value=''; save(); } }
+  function archiveProject(i){ projects[i].archived=true; save(); }
+  function restoreProject(i){ projects[i].archived=false; save(); }
+  function deleteRecord(pi,ri){ projects[pi].total-=projects[pi].records[ri].d; projects[pi].records.splice(ri,1); save(); }
+  function toggleRecords(i){ if(openRecords.has(i)) openRecords.delete(i); else openRecords.add(i); render(); }
+  function closeAllRecords(){ openRecords.clear(); render(); }
+  document.addEventListener('click', e=>{
+    if(!e.target.closest('.proj-controls button') && !e.target.closest('.record') && !e.target.closest('.proj-actions') && !e.target.closest('.record-list')){
+      closeAllRecords();
+    }
+  });
+  function filterArchived(){ const kw=document.getElementById('search-archived').value.toLowerCase(); document.querySelectorAll('#archived-list .project').forEach(proj=>{ const name=proj.querySelector('.title').textContent.toLowerCase(); proj.style.display=name.includes(kw)?'':'none'; }); }
+  function toggleTheme(){ const mode=root.getAttribute('data-theme'); root.setAttribute('data-theme', mode==='light'?'dark':'light'); }
+  function moveUp(i){ if(i>0){ [projects[i-1],projects[i]]=[projects[i],projects[i-1]]; save(); } }
+  function moveDown(i){ if(i<projects.length-1){ [projects[i+1],projects[i]]=[projects[i],projects[i+1]]; save(); } }
+  function render(){
+    let total=0;
+    const activeList=document.getElementById('proj-list'), archList=document.getElementById('archived-list');
+    activeList.innerHTML=''; archList.innerHTML='';
+    projects.forEach((p,i)=>{
+      total+=p.total;
+      const div=document.createElement('div'); div.className='project';
+      div.innerHTML=`
+        <div class="proj-header">
+          <div class="title">${p.name}</div>
+          <div class="time">${formatMin(p.total)}</div>
+        </div>
+        <div class="proj-controls">
+          <button onclick="renameProject(${i})">编辑</button>
+          <button onclick="deleteProject(${i})">删除</button>
+          <button onclick="toggleRecords(${i})">记录</button>
+          <button onclick="${p.archived?'restoreProject':'archiveProject'}(${i})">${p.archived?'恢复':'归档'}</button>
+          <button onclick="moveUp(${i})">↑</button>
+          <button onclick="moveDown(${i})">↓</button>
+        </div>
+        <div class="proj-actions">
+          <input id="time-${i}" placeholder="分钟数" type="number"/>
+          <button onclick="addTime(${i})">记录</button>
+        </div>
+        <div id="records-${i}" class="record-list ${openRecords.has(i)?'open':''}">
+          ${p.records.map((r,ri)=>`<div class="record"><span>${r.t} - ${r.d}分</span><button onclick="deleteRecord(${i},${ri})">×</button></div>`).join('')}
+        </div>
+      `;
+      (p.archived?archList:activeList).appendChild(div);
+    });
+    document.getElementById('header-total').textContent = formatMin(total);
+  }
+  render();
+</script>
+</body>
+</html>
+
+
