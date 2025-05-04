@@ -11,7 +11,7 @@
     body{font-family: "Noto Sans", "Noto Sans SC", "PingFang SC", monospace, sans-serif;background:var(--bg);color:var(--text);}
     .app{max-width:600px;margin:auto;padding:16px;}
     h1{text-align:center;margin-bottom:8px;font-size:1.2rem;}
-    .header-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:1rem;color:var(--secondary);}
+    .header-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:1.05rem;color:var(--secondary);}
     .header-today{color:var(--primary);text-align:center;flex:1;}
     .header-total{text-align:right;flex:1;}
     .theme-toggle{position:fixed;top:16px;right:16px;background:var(--card);border:none;padding:8px;border-radius:50%;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.1);}
@@ -25,19 +25,19 @@
     .list.active{display:block;}
     .project{background:var(--card);border-radius:6px;margin-bottom:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
     .proj-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
-    .title{font-size:1.0rem;font-weight:600;flex:1;}
-    .proj-times{display:flex;width:100%;justify-content:space-between;font-size:0.9rem;margin-top:2px;}
+    .title{font-size:1.1rem;font-weight:600;flex:1;}
+    .proj-times{display:flex;width:100%;justify-content:space-between;font-size:1rem;margin-top:2px;}
     .today-time{color:var(--primary);text-align:center;flex:1;}
     .total-time{color:var(--secondary);text-align:right;flex:1;}
     .proj-controls{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
-    .proj-controls button{flex:1;padding:6px;border:none;background:var(--secondary);color:#fff;border-radius:4px;font-size:0.8rem;cursor:pointer;}
+    .proj-controls button{flex:1;padding:6px;border:none;background:var(--secondary);color:#fff;border-radius:4px;font-size:0.9rem;cursor:pointer;}
     .proj-actions{display:flex;}
     .proj-actions input{flex:1;padding:6px;border:1px solid #ccc;border-radius:4px;}
-    .proj-actions button{margin-left:6px;padding:6px 12px;border:none;background:var(--primary);color:#fff;border-radius:4px;cursor:pointer;}
+    .proj-actions button {margin-left:6px;padding:6.6px 13.2px;font-size:0.95rem;border:none;background:var(--primary);color:#fff;border-radius:4px;cursor:pointer;}
     .record-list{margin-top:8px;max-height:0;overflow:hidden;transition:max-height .3s ease;}
     .record-list.open{max-height:200px;} 
     .record{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #eee;}
-    .record span{font-size:0.8rem;}
+    .record span{font-size:0.9rem;}
     .record button{border:none;background:transparent;color:#ff3b30;font-size:1rem;cursor:pointer;}
     .search-input{width:100%;padding:8px;margin-bottom:12px;border:1px solid #ccc;border-radius:4px;}
   </style>
@@ -57,7 +57,7 @@
     <div id="active" class="list active">
       <div class="project-input">
         <input id="proj-name" placeholder="新项目名称"/>
-        <button onclick="addProject()">添加</button>
+        <button onclick="addProject()">添加项目</button>
       </div>
       <div id="proj-list"></div>
     </div>
@@ -150,7 +150,7 @@
         </div>
         <div class="proj-actions">
           <input id="time-${i}" type="number" placeholder="分钟" />
-          <button onclick="addTime(${i})">记录</button>
+          <button onclick="addTime(${i})">记录时间</button>
         </div>
         <div id="records-${i}" class="record-list ${openRecords.has(i)?'open':''}">
           ${p.records.map((r,ri)=>`<div class="record"><span>${new Date(r.ts).toLocaleString()} - ${r.d}分</span><button onclick="deleteRecord(${i},${ri})">×</button></div>`).join('')}
